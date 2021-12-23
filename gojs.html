@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script language="JavaScript" src="jquery.js"></script>
+    <script language="JavaScript" src="go-debug.js"></script>
+	<script src="http://demo.qunee.com/lib/qunee-min.js"></script>
+</head>
+<body>
+    <div id="canvas" style="width:1000px; height:600px; background-color: #DAE4E4;"></div>
+    <div id="diagramEventsMsg" style="width:400px; height:150px; background-color: #A1F514; margin-top: 50px"></div>
+    <input type="file" name="upload" id="upload"/>
+    <button onclick="uploadfile()">上传文件</button>
+    <p name="content" id="content"></p>
+
+<script>
+	//var link = {};
+	//var route = {};
+    // 显示文件内容
+    window.onload = function() {
+        var getFileContent = function (fileInput, callback) {
+            if (fileInput.files && fileInput.files.length > 0 && fileInput.files[0].size > 0) {
+                //下面这一句相当于JQuery的：var file =$("#upload").prop('files')[0];
+                var file = fileInput.files[0];
+                if (window.FileReader) {
+                    var reader = new FileReader();
+                    reader.onloadend = function (evt) {
+                        if (evt.target.readyState == FileReader.DONE) {
+                            callback(evt.target.result);
+                        }
+                    };
+                    // 包含中文内容用gbk编码
+                    reader.readAsText(file, 'utf-8');
+                }
+            }
+        };
+        /**
+         * upload内容变化时载入内容
+         */
+        document.getElementById('upload').onchange = function () {
+            var content = document.getElementById('content');
+            getFileContent(this, function (str) {
+				console.log("get success");
+				var link = JSON.parse(str)["links"][0]
+				var route = JSON.parse(str)["routes"][0]
+                //console.log(link);
+                //console.log(route);
+				str=str.replace(/\n/g,"<br/>"); //格式保留，追加换行
+                content.innerHTML = str;
+                var routes = [];
+                for(var key in route){
+                    routes.push(route[key])
+                };
+                var links = [];
+                for(var key in link){
+                    links.push(link[key])
+                };
+				console.log(routes)
+				console.log(links)
+                draw_pic(routes,links);
+            });
+        };
+    };
+
+    function uploadfile(){
+        var data = document.getElementById('content').value;
+        var httpRequest = new XMLHttpRequest();//第一步：建立所需的对象
+        httpRequest.open("POST", "/AddDataToServer", true);  //调用AddDataToServer
+        httpRequest.setRequestHeader("Content-Type", "application/json");   //设置请求头信息
+        httpRequest.onreadystatechange = function () {
+            if (httpRequest.readyState == 4 && httpRequest.status == 200) {
+                alert('添加成功');
+            }
+        }
+        httpRequest.send(JSON.stringify(data)); //设置为发送给服务器数据
+    };
+
+    // 绘制拓扑图
+    function draw_pic(routes, lines){
+		var graph = new Q.Graph('canvas');
+		var map = {};
+        if(routes){
+            Q.forEach(routes, function(data){
+                var node = graph.createNode(data.name);
+                node.set("data", data);
+				if(data.type == "router")
+					node.image = "Q-exchanger2";
+				if(data.type == "switch")
+					node.image = "Q-exchanger";
+                map[data.key] = node;
+            });
+        }
+        if(lines){
+            Q.forEach(lines, function(data){
+                var from = map[data.from];
+                var to = map[data.to];
+				console.log("from:"+from.key)
+                if(!from || !to){
+                    return;
+                }
+                var edge = graph.createEdge(data.name, from, to);
+				edge.setStyle(Q.Styles.ARROW_TO, false);
+                edge.set("data", data);
+				/*var label1 = new Q.LabelUI();
+				label1.position = Q.Position.LEFT_BOTTOM;
+				//label1.anchorPosition = Q.Position.LEFT_BOTTOM;
+				label1.offsetX = 10;
+				edge.addUI(label1, {bindingProperty : "data",
+					property : "fromLabel",
+					propertyType : Q.Consts.PROPERTY_TYPE_STYLE});
+				edge.setStyle("fromLabel",data.ip)*/
+				var labelFrom = new Q.LabelUI();
+				labelFrom.position = Q.Position.LEFT_TOP;
+				labelFrom.anchorPosition = Q.Position.LEFT_BOTTOM;
+				labelFrom.border = 1;
+				labelFrom.padding = new Q.Insets(2, 5);
+				labelFrom.showPointer = true;
+				labelFrom.offsetY = -30;
+				labelFrom.backgroundColor = "#EEE";
+				labelFrom.fontSize = 10;
+				labelFrom.fontStyle = "italic 100";
+				edge.addUI(labelFrom, [{
+					property : "labelFrom",
+					propertyType : Q.Consts.PROPERTY_TYPE_CLIENT,
+					bindingProperty : "data"
+				}, {
+					property : "labelFrom.color",
+					propertyType : Q.Consts.PROPERTY_TYPE_CLIENT,
+					bindingProperty : "color"
+				}]);
+				edge.set("labelFrom", data.net+":" + data.ip);
+				
+				var labelTo = new Q.LabelUI();
+				labelTo.position = Q.Position.RIGHT_BOTTOM;
+				labelTo.anchorPosition = Q.Position.RIGHT_BOTTOM;
+				labelTo.border = 1;
+				labelTo.padding = new Q.Insets(2, 5);
+				labelTo.showPointer = true;
+				labelTo.offsetY = 50;
+				labelTo.backgroundColor = "#EEE";
+				labelTo.fontSize = 10;
+				labelTo.fontStyle = "italic 100";
+				edge.addUI(labelTo, [{
+					property : "labelTo",
+					propertyType : Q.Consts.PROPERTY_TYPE_CLIENT,
+					bindingProperty : "data"
+				}, {
+					property : "labelTo.color",
+					propertyType : Q.Consts.PROPERTY_TYPE_CLIENT,
+					bindingProperty : "color"
+				}]);
+				edge.set("labelTo", data.net+":" + data.ip);
+            }, graph);
+			
+        }
+		//var layouter = new Q.SpringLayouter(graph);
+		//layouter.start();
+		var layouter = new Q.TreeLayouter(graph);
+		layouter.parentChildrenDirection = Q.Consts.DIRECTION_RIGHT;
+		layouter.layoutType = Q.Consts.LAYOUT_TYPE_EVEN;
+		layouter.doLayout({callback: function(){
+			graph.zoomToOverview();
+		}});
+	}
+/*        var GO = go.GraphObject.make;
+        var myDiagram =
+            GO(go.Diagram, "myDiagramDiv3",
+              {
+                "undoManager.isEnabled": true // enable Ctrl-Z to undo and Ctrl-Y to redo,
+            });
+        // define a simple Node template
+        myDiagram.nodeTemplate =
+            GO(go.Node, "Horizontal",
+              { background: "#44CCFF" },
+              GO(go.Picture,
+                { margin: 10, width: 50, height: 50, background: "red" },
+                new go.Binding("source")),
+              GO(go.TextBlock,
+                "Default Text",  // the initial value for TextBlock.text
+                { margin: 12, stroke: "white", font: "bold 16px sans-serif" },
+                new go.Binding("text", "name"))
+             );
+        var model = GO(go.GraphLinksModel);
+        model.nodeDataArray =routes;
+        model.linkDataArray = lines;
+        myDiagram.model = model;
+
+        function showMessage(s){
+            document.getElementById("diagramEventsMsg").innerHTML = s
+        }
+
+        myDiagram.addDiagramListener("ObjectSingleClicked",
+            function (e){
+                console.log("clickEvent triggered")
+                var part = e.subject.part;
+                //if (!(part instanceof go.Link)){
+                console.log(part.data)
+                showMessage(part.data.key)
+            }
+        )*/
+    
+
+</script>
+
+</body>
+</html>

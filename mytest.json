@@ -1,0 +1,68 @@
+{
+  "routes": [
+    {
+      "route1": {
+        "key": "A",
+        "name": "cnm",
+		"type" : "router"
+      },
+      "route2": {
+        "key": "B",
+        "name": "jiausanji",
+		"type" : "router"
+      },
+      "route3": {
+        "key": "C",
+        "name": "wangluo",
+		"type" : "router"
+      },
+      "route4": {
+        "key": "E",
+        "name": "lajidazuoye",
+		"type" : "router"
+      },
+      "route5": {
+        "key": "D",
+		"name": "switch1",
+		"type" : "switch"
+      },
+      "route6": {
+        "key": "F",
+		"name": "switch2",
+		"type" : "switch"
+      }
+    }],
+  "links":[
+    {
+      "link1": {
+        "from": "A",
+        "to": "B",
+        "ip": "1.1.1.1",
+        "net": "s0/0/0"
+      },
+      "link2": {
+        "from": "B",
+        "to": "C",
+        "ip": "1.1.1.1",
+        "net": "s0/0/1"
+      },
+      "link3": {
+        "from": "C",
+        "to": "D",
+        "ip": "1.1.1.1",
+        "net": "s0/0/2"
+      },
+      "link4": {
+        "from": "D",
+        "to": "E",
+        "ip": "1.1.1.1",
+        "net": "s0/0/2"
+      },
+	  "link5": {
+        "from": "D",
+        "to": "F",
+        "ip": "1.1.1.1",
+        "net": "s0/0/2"
+      }
+    }]
+}
