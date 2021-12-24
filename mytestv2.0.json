@@ -1,0 +1,71 @@
+{
+  "routes": [
+    {
+      "route1": {
+        "key": "A",
+        "name": "RouterA",
+		"type" : "router"
+      },
+      "route2": {
+        "key": "B",
+        "name": "RouterB",
+		"type" : "router"
+      },
+      "route3": {
+        "key": "C",
+        "name": "RouterC",
+		"type" : "router"
+      },
+      "route4": {
+        "key": "D",
+		"name": "switch1",
+		"type" : "switch"
+      }
+    }],
+  "links":[
+    {
+      "link1": {
+        "from": "D",
+        "to": "A",
+        "ToIp": "172.16.0.1",
+        "ToNet": "f0/0/0"
+      },
+      "link2": {
+        "from": "D",
+        "to": "B",
+        "ToIp": "172.16.0.2",
+        "ToNet": "f0/0/0"
+      },
+      "link3": {
+        "from": "D",
+        "to": "C",
+        "ToIp": "172.16.0.3",
+        "ToNet": "f0/0/0"
+      },
+      "link4": {
+        "from": "A",
+        "to": "B",
+        "FromIp": "x.x.x.x",
+        "FromNet": "s0/0/0",
+		"ToIp": "x.x.x.x",
+        "ToNet": "s0/0/0"
+      },
+	  "link5": {
+        "from": "A",
+        "to": "C",
+        "FromIp": "x.x.x.x",
+        "FromNet": "s0/0/1",
+		"ToIp": "x.x.x.x",
+        "ToNet": "s0/0/1"
+      },
+	  "link6": {
+        "from": "B",
+        "to": "C",
+        "FromIp": "x.x.x.x",
+        "FromNet": "s0/0/1",
+		"ToIp": "x.x.x.x",
+        "ToNet": "s0/0/0"
+      }
+	  
+    }]
+}

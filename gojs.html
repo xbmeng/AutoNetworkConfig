@@ -11,12 +11,17 @@
     <div id="canvas" style="width:1000px; height:600px; background-color: #DAE4E4;"></div>
     <div id="diagramEventsMsg" style="width:400px; height:150px; background-color: #A1F514; margin-top: 50px"></div>
     <input type="file" name="upload" id="upload"/>
-    <button onclick="uploadfile()">上传文件</button>
+	<select id="protocol">
+        <option value="1">ACL</option>
+        <option value="2">xxx</option>
+        <option value="3">xxx</option>
+        <option value="4">xxx</option>
+    </select>
+    <button onclick="uploadfile()">执行</button>
+	<button onclick="uploadfile()">清空配置</button>
     <p name="content" id="content"></p>
 
 <script>
-	//var link = {};
-	//var route = {};
     // 显示文件内容
     window.onload = function() {
         var getFileContent = function (fileInput, callback) {
@@ -42,6 +47,7 @@
             var content = document.getElementById('content');
             getFileContent(this, function (str) {
 				console.log("get success");
+				requestBody = str;
 				var link = JSON.parse(str)["links"][0]
 				var route = JSON.parse(str)["routes"][0]
                 //console.log(link);
@@ -68,48 +74,71 @@
         var httpRequest = new XMLHttpRequest();//第一步：建立所需的对象
         httpRequest.open("POST", "/AddDataToServer", true);  //调用AddDataToServer
         httpRequest.setRequestHeader("Content-Type", "application/json");   //设置请求头信息
+		//body = requestBody;
         httpRequest.onreadystatechange = function () {
             if (httpRequest.readyState == 4 && httpRequest.status == 200) {
                 alert('添加成功');
             }
         }
+		//console.log(data);
+		var protocol = document.getElementById("protocol");
+		var index = protocol.selectedIndex ;
+		console.log(protocol.options[index].text);
         httpRequest.send(JSON.stringify(data)); //设置为发送给服务器数据
     };
-
+	
+	function resetAll(){
+		
+	};
     // 绘制拓扑图
     function draw_pic(routes, lines){
 		var graph = new Q.Graph('canvas');
 		var map = {};
         if(routes){
-            Q.forEach(routes, function(data){
-                var node = graph.createNode(data.name);
-                node.set("data", data);
-				if(data.type == "router")
+			var t = 50;
+			for(var i = 0;i < routes.length;i++)
+			{
+				var node = graph.createNode(routes[i].name);
+                node.set("data", routes[i]);
+				if(routes[i].type == "router")
+				{
 					node.image = "Q-exchanger2";
-				if(data.type == "switch")
+					switch(routes[i].key)
+					{
+						case "A":
+							node.location = new Q.Point(-100,50);
+							break;
+						case "B":
+							node.location = new Q.Point(-300,200);
+							break;
+						case "C":
+							node.location = new Q.Point(100,200);
+							break;
+						default:
+							node.location = new Q.Point(-100,100);
+					}
+				}
+					
+				if(routes[i].type == "switch")
+				{
 					node.image = "Q-exchanger";
-                map[data.key] = node;
-            });
+					node.location = new Q.Point(-100,-100);
+				}
+                map[routes[i].key] = node;
+			}
+
         }
         if(lines){
             Q.forEach(lines, function(data){
                 var from = map[data.from];
                 var to = map[data.to];
-				console.log("from:"+from.key)
+				//console.log("from:"+from.key)
                 if(!from || !to){
                     return;
                 }
                 var edge = graph.createEdge(data.name, from, to);
 				edge.setStyle(Q.Styles.ARROW_TO, false);
                 edge.set("data", data);
-				/*var label1 = new Q.LabelUI();
-				label1.position = Q.Position.LEFT_BOTTOM;
-				//label1.anchorPosition = Q.Position.LEFT_BOTTOM;
-				label1.offsetX = 10;
-				edge.addUI(label1, {bindingProperty : "data",
-					property : "fromLabel",
-					propertyType : Q.Consts.PROPERTY_TYPE_STYLE});
-				edge.setStyle("fromLabel",data.ip)*/
 				var labelFrom = new Q.LabelUI();
 				labelFrom.position = Q.Position.LEFT_TOP;
 				labelFrom.anchorPosition = Q.Position.LEFT_BOTTOM;
@@ -129,39 +158,47 @@
 					propertyType : Q.Consts.PROPERTY_TYPE_CLIENT,
 					bindingProperty : "color"
 				}]);
-				edge.set("labelFrom", data.net+":" + data.ip);
+				if(data.FromIp)
+					edge.set("labelFrom", data.FromNet+":" + data.FromIp);
 				
-				var labelTo = new Q.LabelUI();
-				labelTo.position = Q.Position.RIGHT_BOTTOM;
-				labelTo.anchorPosition = Q.Position.RIGHT_BOTTOM;
-				labelTo.border = 1;
-				labelTo.padding = new Q.Insets(2, 5);
-				labelTo.showPointer = true;
-				labelTo.offsetY = 50;
-				labelTo.backgroundColor = "#EEE";
-				labelTo.fontSize = 10;
-				labelTo.fontStyle = "italic 100";
-				edge.addUI(labelTo, [{
-					property : "labelTo",
-					propertyType : Q.Consts.PROPERTY_TYPE_CLIENT,
-					bindingProperty : "data"
-				}, {
-					property : "labelTo.color",
-					propertyType : Q.Consts.PROPERTY_TYPE_CLIENT,
-					bindingProperty : "color"
-				}]);
-				edge.set("labelTo", data.net+":" + data.ip);
+				//console.log(data.from);
+				if(map[data.from].image != "Q-exchanger")
+				{
+					var labelTo = new Q.LabelUI();
+					labelTo.position = Q.Position.RIGHT_BOTTOM;
+					labelTo.anchorPosition = Q.Position.RIGHT_BOTTOM;
+					labelTo.border = 1;
+					labelTo.padding = new Q.Insets(2, 5);
+					labelTo.showPointer = true;
+					labelTo.offsetY = 50;
+					labelTo.backgroundColor = "#EEE";
+					labelTo.fontSize = 10;
+					labelTo.fontStyle = "italic 100";
+					edge.addUI(labelTo, [{
+						property : "labelTo",
+						propertyType : Q.Consts.PROPERTY_TYPE_CLIENT,
+						bindingProperty : "data"
+					}, {
+						property : "labelTo.color",
+						propertyType : Q.Consts.PROPERTY_TYPE_CLIENT,
+						bindingProperty : "color"
+					}]);
+					
+					if(data.ToIp)
+						edge.set("labelTo", data.ToNet + ":" + data.ToIp);
+				}
+				
             }, graph);
 			
         }
 		//var layouter = new Q.SpringLayouter(graph);
 		//layouter.start();
-		var layouter = new Q.TreeLayouter(graph);
-		layouter.parentChildrenDirection = Q.Consts.DIRECTION_RIGHT;
-		layouter.layoutType = Q.Consts.LAYOUT_TYPE_EVEN;
+		/*var layouter = new Q.TreeLayouter(graph);
+		layouter.parentChildrenDirection = Q.Consts.DIRECTION_BOTTOM;
+		layouter.layoutType = Q.Consts.LAYOUT_TYPE_TWO_SIDE;
 		layouter.doLayout({callback: function(){
 			graph.zoomToOverview();
-		}});
+		}});*/
 	}
 /*        var GO = go.GraphObject.make;
         var myDiagram =
