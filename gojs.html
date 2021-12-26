@@ -3,23 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
+	<style>
+		#fileContent {
+			width: 700px;
+			height: 500px;
+		}
+	</style>
     <script language="JavaScript" src="jquery.js"></script>
     <script language="JavaScript" src="go-debug.js"></script>
 	<script src="http://demo.qunee.com/lib/qunee-min.js"></script>
 </head>
 <body>
-    <div id="canvas" style="width:1000px; height:600px; background-color: #DAE4E4;"></div>
-    <div id="diagramEventsMsg" style="width:400px; height:150px; background-color: #A1F514; margin-top: 50px"></div>
+	<div style="float: left"> 
+		<div id="canvas" style="width:700px; height:600px; background-color: #DAE4E4;"></div>
+	</div>
+    
+    <!--<div id="diagramEventsMsg" style="width:400px; height:150px; background-color: #A1F514; margin-top: 50px"></div>-->
+	<div style="float: right; width:800px; height:600px"> 
+		<input id="cmd" name="command" style="width: 400px;" class="input-text">	
+		<input id="execute" type="button" class="btn" onclick="executeCMD()" value="执行">
+		<p style="height:500px;width:400px;border-style:solid" id="detailInfo"></p>
+	</div>
+	
+	<br/>
     <input type="file" name="upload" id="upload"/>
 	<select id="protocol">
         <option value="1">ACL</option>
         <option value="2">xxx</option>
         <option value="3">xxx</option>
-        <option value="4">xxx</option>
     </select>
     <button onclick="uploadfile()">执行</button>
-	<button onclick="uploadfile()">清空配置</button>
-    <p name="content" id="content"></p>
+	<button onclick="resetAll()">清空配置</button>
+	<button onclick="configCheck()">配置检查</button>
+	<br/>
+    <textarea name="fileContent" id="fileContent"></textarea>
 
 <script>
     // 显示文件内容
@@ -44,7 +61,7 @@
          * upload内容变化时载入内容
          */
         document.getElementById('upload').onchange = function () {
-            var content = document.getElementById('content');
+            var fileContent = document.getElementById('fileContent');
             getFileContent(this, function (str) {
 				console.log("get success");
 				requestBody = str;
@@ -52,8 +69,8 @@
 				var route = JSON.parse(str)["routes"][0]
                 //console.log(link);
                 //console.log(route);
-				str=str.replace(/\n/g,"<br/>"); //格式保留，追加换行
-                content.innerHTML = str;
+				//str=str.replace(/\n/g,"<br/>"); //格式保留，追加换行
+                fileContent.innerHTML = str;
                 var routes = [];
                 for(var key in route){
                     routes.push(route[key])
@@ -70,7 +87,7 @@
     };
 
     function uploadfile(){
-        var data = document.getElementById('content').value;
+        var data = document.getElementById('fileContent').value;
         var httpRequest = new XMLHttpRequest();//第一步：建立所需的对象
         httpRequest.open("POST", "/AddDataToServer", true);  //调用AddDataToServer
         httpRequest.setRequestHeader("Content-Type", "application/json");   //设置请求头信息
@@ -88,7 +105,50 @@
     };
 	
 	function resetAll(){
-		
+		var httpRequest = new XMLHttpRequest();//第一步：建立所需的对象
+        httpRequest.open("POST", "/AddDataToServer", true);  //调用
+        httpRequest.setRequestHeader("Content-Type", "application/json");   //设置请求头信息
+		//body = requestBody;
+        httpRequest.onreadystatechange = function () {
+            if (httpRequest.readyState == 4 && httpRequest.status == 200) {
+                alert('重置成功');
+            }
+        }
+        httpRequest.send(null); //设置为发送给服务器数据
+	};
+	
+	function executeCMD(){
+		let cmd = $("#cmd").val()
+        let router = $('#routerID').text()
+        console.log(router)
+        $.ajax({
+            type: "POST",
+            url: "/execute",
+            data: {router: router, command: cmd},
+            success: function (data) {
+                $("#detailInfo").val(data)
+            },
+            error: function () {
+                alert("error")
+            }
+        })
+	};
+	
+	function configCheck(){
+		var httpRequest = new XMLHttpRequest();//第一步：建立所需的对象
+        httpRequest.open("POST", "/AddDataToServer", true);  //调用
+        httpRequest.setRequestHeader("Content-Type", "application/json");   //设置请求头信息
+		//body = requestBody;
+        httpRequest.onreadystatechange = function () {
+            if (httpRequest.readyState == 4 && httpRequest.status == 200) {
+                alert('网络配置检查通过');
+            }
+        }
+		//console.log(data);
+		var protocol = document.getElementById("protocol");
+		var index = protocol.selectedIndex;
+		console.log(protocol.options[index].text);
+        httpRequest.send(JSON.stringify(data)); //设置为发送给服务器数据
 	};
     // 绘制拓扑图
     function draw_pic(routes, lines){
