@@ -1,0 +1,145 @@
+/**
+* This file is part of Qunee for HTML5.
+* Copyright (c) 2016 by qunee.com
+**/
+if(!window.getI18NString){getI18NString = function(s){return s;}}
+
+
+function CustomServerNode(name, id, image, data){
+    Q.doSuperConstructor(this, CustomServerNode);
+
+    this.init(name, id, image);
+
+    this.set("port", data.port);
+    this.set("ip", data.ip);
+    this.set("stat", data.status);
+    //this.set("outgoing", formatNumber(data.outgoing, 2, "GB"));
+
+}
+var w = 140, h = 120, r = 10;
+CustomServerNode.prototype = {
+    _showDetail: true,
+    iconSize: {width: 23},
+    shape: Q.Shapes.getRect(-w/2, -h/2, w, h, r, r),
+    init: function(name, id, image){
+        this.set("image", image);
+        this.set("id", id);
+        this.set("name", name);
+        this.name = "Double click show detail";
+
+        this.image = this.shape;
+        var gradient = new Q.Gradient(Q.Consts.GRADIENT_TYPE_LINEAR, ["#F4F4F4", "#FFFFFF", "#DFDFDF", "#E9E9E9"]);
+        gradient.angle = Math.PI / 2;
+        this.setStyle(Q.Styles.SHAPE_FILL_GRADIENT, gradient);
+        this.setStyle(Q.Styles.SHAPE_STROKE, 0);
+        this.setStyle(Q.Styles.SHAPE_OUTLINE, 1);
+        this.setStyle(Q.Styles.SHAPE_OUTLINE_STYLE, "#C9C9C9");
+        this.setStyle(Q.Styles.LAYOUT_BY_PATH, false);
+
+        function addUIAt(node, ui, x, y, bindingProperty, value){
+            ui.syncSelection = false;
+            ui.zIndex = 1;
+            ui.position = {x: x, y: y};
+            ui.anchorPosition = Q.Position.LEFT_TOP;
+            ui.fontSize = 10;
+            var binding;
+            if(bindingProperty){
+                binding = {
+                    property : bindingProperty,
+                    propertyType : Q.Consts.PROPERTY_TYPE_CLIENT,
+                    bindingProperty : "data"
+                }
+            }
+            node.addUI(ui, binding);
+            return ui;
+        }
+
+        var icon = new Q.ImageUI(image);
+        icon.size = this.iconSize;
+        addUIAt(this, icon, 15, 12, "icon").anchorPosition = Q.Position.CENTER_MIDDLE;
+
+        addUIAt(this, new Q.LabelUI(name), 30, 5);
+        addUIAt(this, new Q.LabelUI(id), 30, 22).color = "#D00";
+
+        addUIAt(this, new Q.LabelUI("PORT"), 0, 47).anchorPosition = Q.Position.LEFT_MIDDLE;
+        addUIAt(this, new Q.LabelUI("IP"), 35, 47).anchorPosition = Q.Position.LEFT_MIDDLE;
+        addUIAt(this, new Q.LabelUI("STAT"), 100, 47).anchorPosition = Q.Position.LEFT_MIDDLE;
+      	var ui = addUIAt(this, new Q.LabelUI(), 0, 67, "port");
+        ui.anchorPosition = Q.Position.LEFT_MIDDLE;
+        ui.color = "#C20";
+      	ui = addUIAt(this, new Q.LabelUI(), 35, 67, "ip");
+        ui.anchorPosition = Q.Position.LEFT_MIDDLE;
+        ui.color = "#C20";
+      	ui = addUIAt(this, new Q.LabelUI(), 100, 67, "status");
+        ui.anchorPosition = Q.Position.LEFT_MIDDLE;
+        ui.color = "#C20";
+    }
+}
+Q.extend(CustomServerNode, Q.Node);
+
+Object.defineProperties(CustomServerNode.prototype, {
+    showDetail: {
+        get: function(){
+            return this._showDetail;
+        },
+        set: function(show){
+            if(this._showDetail == show){
+                return;
+            }
+            this._showDetail = show;
+
+            this.image = show ? this.shape : this.get("image");
+            this.name = show ? getI18NString('Double click merge') : (this.get("name") + "\n" + this.get("id"));
+            var uis = this.bindingUIs;
+            if(uis){
+                uis.forEach(function(ui){
+                    ui.ui.visible = show;
+                })
+                this.invalidate();
+            }
+        }
+    }
+})
+
+function createServer(name, id, icon){
+    var server = new CustomServerNode(name, id, icon, {port: "f0/0/0", ip: "172.168.1.1", status: true});
+    graph.addElement(server);
+    return server;
+}
+
+
+var nodes = [];
+
+var graph = new Q.Graph(canvas);
+var server = createServer("Switch", "QU-2912", Q.Graphs.exchanger2);
+server.x = -250;
+nodes.push(server);
+var server2 = createServer("Mac", "QU-845", Q.Graphs.node);
+server2.x = 250;
+nodes.push(server2);
+var server3 = createServer("VOIP Server", "QU-619", Q.Graphs.server);
+server3.y = -100;
+nodes.push(server3);
+graph.createEdge(server, server2);
+graph.createEdge(server, server3);
+graph.createEdge(server2, server3);
+
+graph.ondblclick = function(evt){
+    var element = evt.getData();
+    if(element){
+        element.showDetail = !element.showDetail;
+    }
+}
+
+var timer = setTimeout(function A(){
+    nodes.forEach(function(node){
+        node.set("port", "f0/0/0");
+        node.set("ip", "172.168.0.1");
+        node.set("status", true);
+    })
+    timer = setTimeout(A, 200000)
+})
+
+function destroy(){
+    clearTimeout(timer);
+}

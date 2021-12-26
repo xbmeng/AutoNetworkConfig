@@ -20,6 +20,7 @@
     
     <!--<div id="diagramEventsMsg" style="width:400px; height:150px; background-color: #A1F514; margin-top: 50px"></div>-->
 	<div style="float: right; width:800px; height:600px"> 
+		<div id="routerID">请选择设备</div>
 		<input id="cmd" name="command" style="width: 400px;" class="input-text">	
 		<input id="execute" type="button" class="btn" onclick="executeCMD()" value="执行">
 		<p style="height:500px;width:400px;border-style:solid" id="detailInfo"></p>
@@ -39,6 +40,7 @@
     <textarea name="fileContent" id="fileContent"></textarea>
 
 <script>
+	var keyMap = {};
     // 显示文件内容
     window.onload = function() {
         var getFileContent = function (fileInput, callback) {
@@ -121,15 +123,35 @@
 		let cmd = $("#cmd").val()
         let router = $('#routerID').text()
         console.log(router)
+		if(router != "请选择设备")
+		{
+			$.ajax({
+				type: "POST",
+				url: "/execute",
+				data: {router: router, command: cmd},
+				success: function (data) {
+					$("#detailInfo").val(data)
+				},
+				error: function () {
+					alert("error")
+				}
+			})
+		}
+        
+	};
+	
+	function getIpRoute(router){
+        //console.log(router)
         $.ajax({
             type: "POST",
-            url: "/execute",
-            data: {router: router, command: cmd},
+            url: "http://www.baidu.com",
+            data: {router: router},
             success: function (data) {
-                $("#detailInfo").val(data)
+				keyMap[router].tooltip = "双击更新路由表</br>" + data;
             },
             error: function () {
-                alert("error")
+				console.log("error");
+				keyMap[router].tooltip = "双击更新路由表";
             }
         })
 	};
@@ -150,9 +172,29 @@
 		console.log(protocol.options[index].text);
         httpRequest.send(JSON.stringify(data)); //设置为发送给服务器数据
 	};
+	
     // 绘制拓扑图
     function draw_pic(routes, lines){
 		var graph = new Q.Graph('canvas');
+		graph.enableTooltip = true;
+		graph.tooltipDelay = 0;
+		graph.tooltipDuration = 10000;
+		graph.addCustomInteraction({
+			ondblclick: function(evt, graph){
+				//Q.log(evt.getData())
+				if(evt.getData().name)
+				{
+					console.log(evt.getData());
+					getIpRoute(evt.getData().name);
+					//IpTable_map[name] = table;
+				}
+			},
+			onclick: function(evt, graph){
+				var name = evt.getData().name;
+				Q.log("已选择" + name);
+				$("#routerID").html(name)
+			}
+		})
 		var map = {};
         if(routes){
 			var t = 50;
@@ -160,6 +202,11 @@
 			{
 				var node = graph.createNode(routes[i].name);
                 node.set("data", routes[i]);
+				if(routes[i].type == "router")
+				{
+					node.tooltip = "双击查看路由表";
+				}
+				
 				if(routes[i].type == "router")
 				{
 					node.image = "Q-exchanger2";
@@ -184,7 +231,9 @@
 					node.image = "Q-exchanger";
 					node.location = new Q.Point(-100,-100);
 				}
+				
                 map[routes[i].key] = node;
+				keyMap[routes[i].name] = node;
 			}
 
         }
@@ -192,13 +241,14 @@
             Q.forEach(lines, function(data){
                 var from = map[data.from];
                 var to = map[data.to];
-				//console.log("from:"+from.key)
+				
                 if(!from || !to){
                     return;
                 }
                 var edge = graph.createEdge(data.name, from, to);
 				edge.setStyle(Q.Styles.ARROW_TO, false);
                 edge.set("data", data);
+				edge.tooltip = "from\t" + from.name +":"+ data.FromNet + "</br>to\t" + to.name +":"+ data.ToNet + "</br>status\t" + "UP";
 				var labelFrom = new Q.LabelUI();
 				labelFrom.position = Q.Position.LEFT_TOP;
 				labelFrom.anchorPosition = Q.Position.LEFT_BOTTOM;
@@ -247,55 +297,13 @@
 					if(data.ToIp)
 						edge.set("labelTo", data.ToNet + ":" + data.ToIp);
 				}
-				
             }, graph);
 			
         }
-		//var layouter = new Q.SpringLayouter(graph);
-		//layouter.start();
-		/*var layouter = new Q.TreeLayouter(graph);
-		layouter.parentChildrenDirection = Q.Consts.DIRECTION_BOTTOM;
-		layouter.layoutType = Q.Consts.LAYOUT_TYPE_TWO_SIDE;
-		layouter.doLayout({callback: function(){
-			graph.zoomToOverview();
-		}});*/
-	}
-/*        var GO = go.GraphObject.make;
-        var myDiagram =
-            GO(go.Diagram, "myDiagramDiv3",
-              {
-                "undoManager.isEnabled": true // enable Ctrl-Z to undo and Ctrl-Y to redo,
-            });
-        // define a simple Node template
-        myDiagram.nodeTemplate =
-            GO(go.Node, "Horizontal",
-              { background: "#44CCFF" },
-              GO(go.Picture,
-                { margin: 10, width: 50, height: 50, background: "red" },
-                new go.Binding("source")),
-              GO(go.TextBlock,
-                "Default Text",  // the initial value for TextBlock.text
-                { margin: 12, stroke: "white", font: "bold 16px sans-serif" },
-                new go.Binding("text", "name"))
-             );
-        var model = GO(go.GraphLinksModel);
-        model.nodeDataArray =routes;
-        model.linkDataArray = lines;
-        myDiagram.model = model;
 
-        function showMessage(s){
-            document.getElementById("diagramEventsMsg").innerHTML = s
-        }
-
-        myDiagram.addDiagramListener("ObjectSingleClicked",
-            function (e){
-                console.log("clickEvent triggered")
-                var part = e.subject.part;
-                //if (!(part instanceof go.Link)){
-                console.log(part.data)
-                showMessage(part.data.key)
-            }
-        )*/
+	};
+	
+	
     
 
 </script>
