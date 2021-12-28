@@ -2,9 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>网络配置大师</title>
 	<style>
 		#fileContent {
+			width: 700px;
+			height: 500px;
+		}
+		#check {
 			width: 700px;
 			height: 500px;
 		}
@@ -23,7 +27,7 @@
 		<div id="routerID">请选择设备</div>
 		<input id="cmd" name="command" style="width: 400px;" class="input-text">	
 		<input id="execute" type="button" class="btn" onclick="executeCMD()" value="执行">
-		<p style="height:500px;width:400px;border-style:solid" id="detailInfo"></p>
+		<textarea style="height:500px;width:400px;border-style:solid" id="detailInfo"></textarea>
 	</div>
 	
 	<br/>
@@ -35,13 +39,16 @@
     </select>
     <button onclick="uploadfile()">执行</button>
 	<button onclick="resetAll()">清空配置</button>
-	<button onclick="configCheck()">配置检查</button>
+	<input type="file" name="uploadCheck" id="uploadCheck" style="position: absolute;right: 150px;"/>
+	<button onclick="configCheck()" style="position: absolute;right: 100px;">配置检查</button>
+	
 	<br/>
     <textarea name="fileContent" id="fileContent"></textarea>
 
+	<textarea name="check" id="check"></textarea>
 <script>
 	var keyMap = {};
-	var BaseUrl = "";
+	var BaseUrl = "http://127.0.0.1:8000";
     // 显示文件内容
     window.onload = function() {
         var getFileContent = function (fileInput, callback) {
@@ -85,6 +92,17 @@
 				console.log(routes)
 				console.log(links)
                 draw_pic(routes,links);
+            });
+        };
+		/**
+         * upload内容变化时载入内容
+         */
+		 document.getElementById('uploadCheck').onchange = function () {
+            var fileContent = document.getElementById('check');
+            getFileContent(this, function (str) {
+				console.log("get success");
+				requestBody = str;
+                fileContent.innerHTML = str;
             });
         };
     };
@@ -155,7 +173,9 @@
                 alert('重置成功');
             }
         }
+		console.log(data);
         httpRequest.send(JSON.stringify(data)); //设置为发送给服务器数据
+
 	};
 	
 	function executeCMD(){
@@ -163,46 +183,86 @@
         let router = $('#routerID').text()
         console.log(router)
 		//var data = {}
-		console.log(router.indexOf("witch") == -1);
-		if(router != "请选择设备" && router.indexOf("witch") == -1)
+		//console.log(router.indexOf("witch") == -1);
+		
+		if(router != "请选择设备" && router.indexOf("witch") == -1 && cmd != "")
 		{
-			$.ajax({
-				type: "POST",
-				url: BaseUrl + "/execute",
-				data: {router: router, command: cmd},
-				success: function (data) {
-					$("#detailInfo").val(data)
-				},
-				error: function () {
-					alert("error")
+			// $.ajax({
+			// 	type: "POST",
+			// 	url: BaseUrl + "/command_exe",
+			// 	data: {jsonData},
+			// 	success: function (data) {
+			// 		$("#detailInfo").val(data)
+			// 	},
+			// 	error: function () {
+			// 		alert("error")
+			// 	}
+			// })
+			var detailInfo = document.getElementById('detailInfo');
+			var jsonData = {};
+			jsonData.command = cmd;
+			jsonData.router = router;
+			console.log(jsonData);
+			url = BaseUrl + "/command_exe";
+			var httpRequest = new XMLHttpRequest();//第一步：建立所需的对象
+			httpRequest.open("POST", url, true);  //调用
+			httpRequest.setRequestHeader("Content-Type", "application/json");   //设置请求头信息
+			//body = requestBody;
+			var responseText = "";
+			httpRequest.onreadystatechange = function () {
+				if (httpRequest.readyState == 4 && httpRequest.status == 200) {
+					alert('执行成功');
+					var responseText = httpRequest.responseText;
+					console.log(responseText);
+					// $("#detileInfo").html(responseText)
+					detailInfo.innerHTML = httpRequest.responseText;
 				}
-			})
+        	}
+        	httpRequest.send(JSON.stringify(jsonData)); //设置为发送给服务器数据
+			
 		}else{
-			console.log("设备选择错误");
+			console.log("错误");
+			alert("错误");
 		}
         
 	};
 	
 	function getIpRoute(router){
         //console.log(router)
-        $.ajax({
-            type: "POST",
-            url: BaseUrl + "/xxx",
-            data: {router: router},
-            success: function (data) {
-				keyMap[router].tooltip = data + "双击更新路由表</br>";
-            },
-            error: function () {
-				console.log("error");
-				keyMap[router].tooltip = "双击更新路由表";
-            }
-        })
+        // $.ajax({
+        //     type: "POST",
+        //     url: BaseUrl + "/router_information",
+        //     data: {router: router},
+        //     success: function (data) {
+		// 		keyMap[router].tooltip = "双击更新路由表</br>" + data;
+        //     },
+        //     error: function () {
+		// 		console.log("error");
+		// 		keyMap[router].tooltip = "双击更新路由表";
+        //     }
+        // })
+		var data = {};
+		data.router = router;
+		var httpRequest = new XMLHttpRequest();//第一步：建立所需的对象
+        httpRequest.open("POST", BaseUrl + "/config_check", true);  //调用
+        httpRequest.setRequestHeader("Content-Type", "application/json");   //设置请求头信息
+		//body = requestBody;
+        httpRequest.onreadystatechange = function () {
+            if (httpRequest.readyState == 4 && httpRequest.status == 200) {
+				var responseText = httpRequest.responseText;
+				console.log(responseText);
+                keyMap[router].tooltip = "双击更新路由表</br>" + responseText;
+            }else{
+				console.log("erro");
+			}
+        }
+		httpRequest.send(JSON.stringify(data)); //设置为发送给服务器数据
 	};
 	
 	function configCheck(){
-		var data = document.getElementById('fileContent').value;
+		var data = document.getElementById('check').value;
 		var httpRequest = new XMLHttpRequest();//第一步：建立所需的对象
-        httpRequest.open("POST", BaseUrl + "/AddDataToServer", true);  //调用
+        httpRequest.open("POST", BaseUrl + "/config_check", true);  //调用
         httpRequest.setRequestHeader("Content-Type", "application/json");   //设置请求头信息
 		//body = requestBody;
         httpRequest.onreadystatechange = function () {

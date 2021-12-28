@@ -1,0 +1,113 @@
+{
+	
+    "routes": [{
+        "route1": {
+            "key": "A",
+            "name": "RouterA",
+            "type": "router"
+        },
+        "route2": {
+            "key": "B",
+            "name": "RouterB",
+            "type": "router"
+        },
+        "route3": {
+            "key": "C",
+            "name": "RouterC",
+            "type": "router"
+        },
+        "route4": {
+            "key": "D",
+            "name": "switch1",
+            "type": "switch"
+        }
+    }],
+    "IPs": {
+        "RouterA": {
+            "s0/0/0": {
+                "ip": "192.168.1.2",
+                "subnetMask": "255.255.255.0"
+            },
+            "s0/0/1": {
+                "ip": "192.168.2.1",
+                "subnetMask": "255.255.255.0"
+            }
+        },
+        "RouterB": {
+            "s0/0/0": {
+                "ip": "192.168.1.1",
+                "subnetMask": "255.255.255.0"
+            },
+            "s0/0/1": {
+                "ip": "192.168.0.1",
+                "subnetMask": "255.255.255.0"
+            }
+        },
+        "RouterC": {
+            "s0/0/0": {
+                "ip": "192.168.3.1",
+                "subnetMask": "255.255.255.0"
+            },
+            "s0/0/1": {
+                "ip": "192.168.2.2",
+                "subnetMask": "255.255.255.0"
+            }
+        }
+    },
+    "links": [{
+        "link1": {
+            "from": "D",
+            "to": "A",
+            "ToIp": "172.16.0.1",
+            "ToNet": "f0/0/0"
+        },
+        "link2": {
+            "from": "D",
+            "to": "B",
+            "ToIp": "172.16.0.2",
+            "ToNet": "f0/0/0"
+        },
+        "link3": {
+            "from": "D",
+            "to": "C",
+            "ToIp": "172.16.0.3",
+            "ToNet": "f0/0/0"
+        },
+        "link4": {
+            "from": "A",
+            "to": "B",
+            "FromIp": "192.168.1.2",
+            "FromNet": "s0/0/0",
+            "ToIp": "192.168.1.1",
+            "ToNet": "s0/0/0"
+        },
+        "link5": {
+            "from": "A",
+            "to": "C",
+            "FromIp": "192.168.2.1",
+            "FromNet": "s0/0/1",
+            "ToIp": "192.168.2.2",
+            "ToNet": "s0/0/1"
+        }
+    }],
+    "ipRoutes": {
+        "RouterB": {
+            "destination": "192.168.3.0",
+            "subnetMask": "255.255.255.0",
+            "via": "192.168.1.2"
+        },
+        "RouterC": {
+            "destination": "192.168.0.0",
+            "subnetMask": "255.255.255.0",
+            "via": "192.168.2.1"
+        }
+    },
+    "ACLOptions": {
+        "source":"RouterA",
+        "target": "RouterB",
+        "direction":"in",
+        "way":"deny",
+        "settingInterface": "s0/0/0",
+        "ACLId":"1"
+    }
+}
