@@ -30,8 +30,8 @@
     <input type="file" name="upload" id="upload"/>
 	<select id="protocol">
         <option value="1">ACL</option>
-        <option value="2">xxx</option>
-        <option value="3">xxx</option>
+        <option value="2">static</option>
+        <option value="3">OSPF</option>
     </select>
     <button onclick="uploadfile()">执行</button>
 	<button onclick="resetAll()">清空配置</button>
@@ -41,6 +41,7 @@
 
 <script>
 	var keyMap = {};
+	var BaseUrl = "";
     // 显示文件内容
     window.onload = function() {
         var getFileContent = function (fileInput, callback) {
@@ -91,7 +92,26 @@
     function uploadfile(){
         var data = document.getElementById('fileContent').value;
         var httpRequest = new XMLHttpRequest();//第一步：建立所需的对象
-        httpRequest.open("POST", "/AddDataToServer", true);  //调用AddDataToServer
+		var protocol = document.getElementById("protocol");
+		var index = protocol.selectedIndex ;
+		var selected = protocol.options[index].text;
+		var url = "";
+		switch(selected)
+		{
+			case "ACL":
+				url = BaseUrl + "/ACL_add";
+				break;
+			case "static":
+				url = BaseUrl + "/static_add";
+				break;
+			case "OSPF":
+				url = BaseUrl + "/OSPF_add";
+				break;
+			default:
+				url = BaseUrl + "/static_add";
+				break;
+		}
+        httpRequest.open("POST", url, true);  //调用AddDataToServer
         httpRequest.setRequestHeader("Content-Type", "application/json");   //设置请求头信息
 		//body = requestBody;
         httpRequest.onreadystatechange = function () {
@@ -100,15 +120,34 @@
             }
         }
 		//console.log(data);
-		var protocol = document.getElementById("protocol");
-		var index = protocol.selectedIndex ;
-		console.log(protocol.options[index].text);
+		
         httpRequest.send(JSON.stringify(data)); //设置为发送给服务器数据
     };
 	
 	function resetAll(){
+		var data = document.getElementById('fileContent').value;
 		var httpRequest = new XMLHttpRequest();//第一步：建立所需的对象
-        httpRequest.open("POST", "/AddDataToServer", true);  //调用
+		var protocol = document.getElementById("protocol");
+		var index = protocol.selectedIndex ;
+		var selected = protocol.options[index].text;
+		var url = "";
+		console.log(selected);
+		switch(selected)
+		{
+			case "ACL":
+				url = BaseUrl + "/ACL_remove";
+				break;
+			case "static":
+				url = BaseUrl + "/static_remove";
+				break;
+			case "OSPF":
+				url = BaseUrl + "/OSPF_remove";
+				break;
+			default:
+				url = BaseUrl + "/static_remove";
+				break;
+		}
+        httpRequest.open("POST", url, true);  //调用
         httpRequest.setRequestHeader("Content-Type", "application/json");   //设置请求头信息
 		//body = requestBody;
         httpRequest.onreadystatechange = function () {
@@ -116,18 +155,20 @@
                 alert('重置成功');
             }
         }
-        httpRequest.send(null); //设置为发送给服务器数据
+        httpRequest.send(JSON.stringify(data)); //设置为发送给服务器数据
 	};
 	
 	function executeCMD(){
 		let cmd = $("#cmd").val()
         let router = $('#routerID').text()
         console.log(router)
-		if(router != "请选择设备")
+		//var data = {}
+		console.log(router.indexOf("witch") == -1);
+		if(router != "请选择设备" && router.indexOf("witch") == -1)
 		{
 			$.ajax({
 				type: "POST",
-				url: "/execute",
+				url: BaseUrl + "/execute",
 				data: {router: router, command: cmd},
 				success: function (data) {
 					$("#detailInfo").val(data)
@@ -136,6 +177,8 @@
 					alert("error")
 				}
 			})
+		}else{
+			console.log("设备选择错误");
 		}
         
 	};
@@ -144,10 +187,10 @@
         //console.log(router)
         $.ajax({
             type: "POST",
-            url: "http://www.baidu.com",
+            url: BaseUrl + "/xxx",
             data: {router: router},
             success: function (data) {
-				keyMap[router].tooltip = "双击更新路由表</br>" + data;
+				keyMap[router].tooltip = data + "双击更新路由表</br>";
             },
             error: function () {
 				console.log("error");
@@ -157,8 +200,9 @@
 	};
 	
 	function configCheck(){
+		var data = document.getElementById('fileContent').value;
 		var httpRequest = new XMLHttpRequest();//第一步：建立所需的对象
-        httpRequest.open("POST", "/AddDataToServer", true);  //调用
+        httpRequest.open("POST", BaseUrl + "/AddDataToServer", true);  //调用
         httpRequest.setRequestHeader("Content-Type", "application/json");   //设置请求头信息
 		//body = requestBody;
         httpRequest.onreadystatechange = function () {
